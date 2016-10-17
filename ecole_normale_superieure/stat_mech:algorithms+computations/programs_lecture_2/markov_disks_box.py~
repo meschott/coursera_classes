@@ -1,0 +1,36 @@
+import random, math
+
+config_A = ((0.30, 0.30), (0.30, 0.70), (0.70, 0.30), (0.70,0.70))
+config_B = ((0.30, 0.20), (0.30, 0.80), (0.70, 0.20), (0.70,0.70))
+config_C = ((0.20, 0.20), (0.20, 0.80), (0.75, 0.25), (0.75,0.75))
+
+configurations = [config_A, config_B, config_C]
+L = [[0.25, 0.25], [0.25, 0.75], [0.75, 0.25], [0.75, 0.75]]
+hits = {config_A: 0, config_B: 0, config_C: 0}
+
+sigma = 0.05
+sigma_sq = sigma ** 2
+delta = 0.1
+del_xy = 0.005
+N = 4
+n_steps = 10000000
+
+for steps in range(n_steps):
+    i = random.randint(0,N-1)
+    a = L[i]
+    b = [a[0] + random.uniform(-delta, delta), a[1] + random.uniform(-delta, delta)]
+    #minimum distance between disks
+    min_dist = math.sqrt(min((b[0] - c[0]) ** 2 + (b[1] - c[1]) ** 2 for c in L if c != a))
+    box_cond = min(b[0], b[1]) < sigma or max(b[0], b[1]) > 1.0 - sigma
+    if not (box_cond or min_dist < 2 * sigma):
+        a[:] = b
+        L[i] = a
+        for conf in configurations:
+            condition_hit = True
+            for config_point in conf:
+                condition_b = min(max(abs(new_point[0] - config_point[0]), abs(new_point[1] - config_point[1])) for new_point in L) < del_xy
+                condition_hit *= condition_b
+                if condition_hit:
+                    hits[conf] += 1   
+for conf in configurations:
+    print conf, hits[conf]

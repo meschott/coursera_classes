@@ -1,0 +1,70 @@
+import random, math
+import matplotlib.pyplot as plt
+import numpy as np
+
+def psi_n_square(x, n):
+    if n == -1:
+        return 0.0
+    else:
+        psi = [math.exp(-x ** 2 / 2.0) / math.pi ** 0.25]
+        psi.append(math.sqrt(2.0) * x * psi[0])
+        for k in range(2, n + 1):
+            psi.append(math.sqrt(2.0 / k) * x * psi[k - 1] -
+                       math.sqrt((k - 1.0) / k) * psi[k - 2])
+        return psi[n] ** 2
+    
+def exact_prob(x, beta):
+    local_prob = math.sqrt((math.tanh(beta/2)/math.pi)) * math.exp( - (x ** 2) * math.tanh(beta/2))
+    return local_prob
+
+def classic_prob(x, beta):
+    local_prob = math.sqrt(beta/(2*math.pi)) * math.exp( - beta * x**2/2)
+    return local_prob
+
+allowed_shifts = (-1,1)
+x = 0.0
+beta = [0.2, 1.0, 5.0]
+delta = 5.0
+n = 0
+n_trials = 10 ** 6
+data = np.zeros((len(beta), n_trials))
+
+for b in beta:
+    #reset position and n
+    x = 0.0
+    n = 0
+    for k in range(n_trials):
+        x_new = x + random.uniform(-delta, delta)
+        # Shift along x in the same state(n)?
+        if random.uniform(0.0, 1.0) <  (psi_n_square(x_new, n)/psi_n_square(x, n)):
+            x = x_new
+        # Change states?
+        n_new = n + random.choice(allowed_shifts)
+        if random.uniform(0.0, 1.0) < min(1, ((psi_n_square(x, n_new)/psi_n_square(x, n)) * math.exp(-b * (n_new - n)))):
+	    n = n_new
+        data[beta.index(b)][k] = x
+
+x_range = np.arange(-10,10,0.1)
+
+for i in range(len(beta)):
+    b = beta[i]
+    label_str = 'beta = %.1f' % (b)
+    plt.hist(data[i], 100, normed=True, label= label_str, alpha = 0.5)
+    quantum_P = []
+    classic_P = []
+    for i in x_range:
+        quantum_P.append(exact_prob(i, b))
+        classic_P.append(classic_prob(i, b))
+    plt.plot(x_range, quantum_P, label="quantum prob beta=%.2f" %b)
+    plt.plot(x_range, classic_P, label="classic prob beta=%.2f" %b)        
+    plt.legend(loc='upper left', shadow = True, fontsize='small')
+    plt.title("Markov and Metropolis: x frequency for various T")
+    plt.xlabel("position x")
+    plt.ylabel("frequency")
+    plt.savefig('hw5_A1_beta_%0.2f.png' % b)
+    plt.clf()
+    
+
+
+
+
